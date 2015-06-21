@@ -1,34 +1,116 @@
-
 #The dataset:
 The dataset being used is: Human Activity Recognition Using Smartphones,which is accelerometer data generated from an experiment with Samsung Galaxy S smartphones.
 A full description is available at the site where the data was obtained: 
 http://archive.ics.uci.edu/ml/datasets/Human+Activity+Recognition+Using+Smartphones
 
 You can download the dataset used in the project from [link]
+
+
 #Variable (Fields)
+The Variable in dataset generated from:
+- tAcc-XYZ: The accelerometer captured at a constant rate of 50 Hz in 3-axial raw signals.
+- tGyro-XYZ: gyroscope 3-axial raw signals captured at a constant rate of 50 Hz.
+- tBodyAcc-XYZ :acceleration signal (in 3 directions) for body acceleration
+- tGravityAcc-XYZ : the gravity acceleration signal for in 3-axial.
+- (fBodyAcc-XYZ, fBodyAccJerk-XYZ, fBodyGyro-XYZ, fBodyAccJerkMag, fBodyGyroMag, fBodyGyroJerkMag) : store the Fast Fourier Transform (FFT)  after applied to some of these signals.
+-  - mean(): Mean value
+ - std(): Standard deviation
+ - mad(): Median absolute deviation 
+  - max(): Largest value in array
+  - min(): Smallest value in array
+  - sma(): Signal magnitude area
+   - energy(): Energy measure. Sum of the squares divided by the number of values. 
+   - iqr(): Interquartile range 
+  - entropy(): Signal entropy
+   - arCoeff(): Autorregresion coefficients with Burg order equal to 4
+   - correlation(): correlation coefficient between two signals
+   - maxInds(): index of the frequency component with largest magnitude
+   - meanFreq(): Weighted average of the frequency components to obtain a mean frequency
+  - skewness(): skewness of the frequency domain signal 
+  - kurtosis(): kurtosis of the frequency domain signal 
+   - bandsEnergy(): Energy of a frequency interval within the 64 bins of the FFT of each window.
+  - angle(): Angle between to vectors.
+  
+ These are  the estimated variables of the feature vector for each pattern (each variable estimated for 3 different direction).
+- (gravityMean
+ , tBodyAccMean
+ , tBodyAccJerkMean
+ , tBodyGyroMean
+,  tBodyGyroJerkMean) are additional estimated variables in angle() variable by averaging the signals in a signal window sample.
+- This Summary is stemmed form 'features_infor.txt' file , the complete list of variables (A 561-feature vector) available in 'features.txt'
 
-[link]:https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip
 
-  #Transformations:
+#Transformations:
   There are a set of steps done on the dataset to prepare it for analysis. These steps include :
-  - Merging two different datasets (training,testing) into one complete dataset, the number of observations after merging is (10299 obs.) each of them has (561) different variables describing it.
-  - Subsetting the variables to extract only the measurements on the mean and standard    deviation for each measurement. The number of variables after Subsetting the   columns is down to 66 variables.
-  - Renaming the activity values in the y_data into a descriptive activity names to        name the activities in the dataset with appropriate readable label
+  - Reading and Merging two different datasets (training,testing) into one complete dataset, the number of observations after merging is (10299 obs.) each of them has (561) different variables describing it.
+  - Subsetting the variables to select only the measurements on the mean and standard    deviation for each measurement. The number of variables after Subsetting the   columns is down to 66 variables.
+  - Renaming the activity values in the y_data into a descriptive activity names with      the activity labels based on the activity_labels.txt (walking ,walkingupstairs ,walkingdownstairs ,sitting ,standing ,laying).
   - Changing the labels in  dataset with descriptive variable names: 
   
-  The variable of activity dataset (y_dataset) is named by (activity), the variable in the subject dataset is named by (subject),and the complete x dataset is named by the selected 66 variables from features.txt file after doing simple modification like removing redundent words ("BodyBody" modified to "Body") and  removing some characters ("()" is removed from the variables names).
+  The variable of activity dataset (y_dataset) is named by (activity), the variable in the subject dataset is named by (subject), and the complete x dataset is named by the selected 66 variables from features.txt file after doing simple modification like removing redundent words ("BodyBody" modified to "Body") and removing some characters ("()" is removed from the variables names).
 
   - Grouping a subset of dataset by different variables (subject,activity) then    calculating average of each variable for each activity and each subject.
-  - A new tidy dataset is created for the variables average in each group.
+  - A new tidy dataset is created for the variables average in each group which is 180 different records (30 subjects * 6 activities = 180 rows).
+
+#Tidying messy dataset:
   
 ####The purpose of the analysis is to Tidying messy dataset. In what follows, I will specify the most common problems with messy datasets and disscus the exsistance of each on in the Human Activity Recognition dataset.
 
-  - Column headers are values, not variable names: 
-  - 
-  - 
-  - This problem exists in the dataset 
-   one of the main problem of the data-set is that 
-  -A single observational unit is stored in multiple tables
-  -Multiple variables are stored in one column
-- Variables are stored in both rows and columns
+  - #####Column headers are values, not variable names:
+   If you open one of X files, you will notice that the first row is one of the observation instances not a header for the dataset. The problem is solved by adding a header of variables names using the features.txt file in step 2 of project:
+```sh
+> ## name the variables with the selected column names
+  > names(x_data_sample) <- features[mean_std_features, 2]
+``` 
+The same issue at y and subject files , they are named by appropariate headers:
+```sh
+  > names(y_data) <- "activity_name"
+  > names(subject_data) <- "subject"
+``` 
+
+  - ####A single observational unit is stored in multiple tables:
+  Take a look at the x_train file and y_train file you will notice that the label for each observation at x file is stored in y file . Even it is may be generated by some processing done on the data, the label (activity) actually is a descriptive unit for the same observation in different table. This problem is handled by the transformation done on R script.
+
+```sh
+  > # Add new variable 'activity' into the sample dataset from  activity_name of 
+      label dataset
+> activity_subject_x_dataset<-mutate(subject_x_dataset,
+      activity=y_data$activity_name)
+```
+The same for subject files, the subject is another unit for the observation (the person did the activities for the experiment) which is also separated in different file. The observation field is added to the same table by the following line:
+
+```sh
+>#Add new variable 'subject' into the sample dataset from  subject_data
+>subject_x_dataset<-mutate(x_data_sample,subject=subject_data$subject)
+
+```
+  - ####Multiple variables are stored in one column:
+  The dataset does not have this problem, each variable has only one meaning for the observation. (i.e tBodyAccJerk-X is the body linear acceleration in time for x direction , tAcc-XYZ measures  accelerometer for 3-axial raw signals each axial has different variable. )
+
+  - ####Variables are stored in both rows and columns:
+  In the dataset, the variables are stored only in columns and the rows contain the actual instances of the experiment. 
+  - ####Multiple types of observational units are stored in the same table
+    Each observation describs: 
+    - The accelerometer and gyroscope 3-axial raw signals tAcc-XYZ and tGyro-XYZ captured at a constant rate of 50 Hz
+    - The body linear acceleration and angular velocity were derived in time to obtain Jerk signals  (tBodyAccJerk-XYZ and tBodyGyroJerk-XYZ)
+    - Fast Fourier Transform (FFT) was applied to some of these signals producing 
+fBodyAcc-XYZ, fBodyAccJerk-XYZ, fBodyGyro-XYZ, fBodyAccJerkMag, fBodyGyroMag, fBodyGyroJerkMag
+ 
+   These variables described for each single activity pattern for each single subject.
+
+
+#Input Data 
+The input data should be placed in ./UCI-dataset/  
+The dataset contains the variables described above.
+
+#Output
+The output data will be produced in ./UCI-dataset/average_dataset.txt file 
+It includes the following variable names :
+
+"subject" "activity" "tBodyAcc-mean-X" "tBodyAcc-mean-Y" "tBodyAcc-mean-Z" "tBodyAcc-std-X" "tBodyAcc-std-Y" "tBodyAcc-std-Z" "tGravityAcc-mean-X" "tGravityAcc-mean-Y" "tGravityAcc-mean-Z" "tGravityAcc-std-X" "tGravityAcc-std-Y" "tGravityAcc-std-Z" "tBodyAccJerk-mean-X" "tBodyAccJerk-mean-Y" "tBodyAccJerk-mean-Z" "tBodyAccJerk-std-X" "tBodyAccJerk-std-Y" "tBodyAccJerk-std-Z" "tBodyGyro-mean-X" "tBodyGyro-mean-Y" "tBodyGyro-mean-Z" "tBodyGyro-std-X" "tBodyGyro-std-Y" "tBodyGyro-std-Z" "tBodyGyroJerk-mean-X" "tBodyGyroJerk-mean-Y" "tBodyGyroJerk-mean-Z" "tBodyGyroJerk-std-X" "tBodyGyroJerk-std-Y" "tBodyGyroJerk-std-Z" "tBodyAccMag-mean" "tBodyAccMag-std" "tGravityAccMag-mean" "tGravityAccMag-std" "tBodyAccJerkMag-mean" "tBodyAccJerkMag-std" "tBodyGyroMag-mean" "tBodyGyroMag-std" "tBodyGyroJerkMag-mean" "tBodyGyroJerkMag-std" "fBodyAcc-mean-X" "fBodyAcc-mean-Y" "fBodyAcc-mean-Z" "fBodyAcc-std-X" "fBodyAcc-std-Y" "fBodyAcc-std-Z" "fBodyAccJerk-mean-X" "fBodyAccJerk-mean-Y" "fBodyAccJerk-mean-Z" "fBodyAccJerk-std-X" "fBodyAccJerk-std-Y" "fBodyAccJerk-std-Z" "fBodyGyro-mean-X" "fBodyGyro-mean-Y" "fBodyGyro-mean-Z" "fBodyGyro-std-X" "fBodyGyro-std-Y" "fBodyGyro-std-Z" "fBodyAccMag-mean" "fBodyAccMag-std" "fBodyAccJerkMag-mean" "fBodyAccJerkMag-std" "fBodyGyroMag-mean" "fBodyGyroMag-std" "fBodyGyroJerkMag-mean" "fBodyGyroJerkMag-std"
+
+These variable are  where choosen as they included either mean or std in their original names. Each record is the mean of each variables for all 6 activities done for 30 different subject.
+
+
+[link]:https://d396qusza40orc.cloudfront.net/getdata%2Fprojectfiles%2FUCI%20HAR%20Dataset.zip 
 
